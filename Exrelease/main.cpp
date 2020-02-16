@@ -5,48 +5,88 @@ typedef BOOL(*SetHook)();
 typedef BOOL(*UnHook)();
 
 
-BOOL HookAndUnhook() {
+BOOL GlobalHook(BOOL isSet) {
 	HMODULE hModule = LoadLibrary(L"GlobalHool.dll");
-	SetHook sethook = (SetHook)GetProcAddress(hModule, "SetGlobalHook");
-	UnHook unhook = (UnHook)GetProcAddress(hModule, "UnsetGlobalHook");
-	printf("GetProcAddress Error[%d]\n", ::GetLastError());
-	if (sethook())
+	if (!hModule)
 	{
-		printf("SetGlobalHook OK\n");
-	}
-	else
-	{
-		printf("SetGlobalHook Error\n");
+		printf("LoadLibrary Error:%d", GetLastError());
 		return FALSE;
 	}
 
-	system("pause");
-
-	if (unhook())
+	if (isSet==TRUE)
 	{
-		printf("UnSetGlobalHook OK\n");
-		system("pause");
+		SetHook sethook = (SetHook)GetProcAddress(hModule, "SetGlobalHook");
+		if (!sethook)
+		{
+			printf("GetProcAddress SetGlobalHook Error:%d", GetLastError());
+			return FALSE;
+		}
+		sethook();
+		return TRUE;
 	}
 	else
 	{
-		printf("UnSetGlobalHook Error\n");
-		return FALSE;
+		UnHook unhook = (UnHook)GetProcAddress(hModule, "UnsetGlobalHook");
+		if (!unhook)
+		{
+			printf("GetProcAddress UnsetGlobalHook Error:%d", GetLastError());
+			return FALSE;
+		}
+		unhook();
+		return TRUE;
 	}
-	system("pause");
-	return TRUE;
+
 }
+
 int main(int argc, char* argv[]) {
 
 	HRSRC hRsrc = FindResource(0, (LPCWSTR)101, L"MYDLL");
-	DWORD dw = GetLastError();
+	if (!hRsrc)
+	{
+		printf("FindResource Error:%d", GetLastError());
+		return FALSE;
+	}
+
 	DWORD dwSize = SizeofResource(NULL, hRsrc);
+	if (!dwSize)
+	{
+		printf("SizeofResource Error:%d", GetLastError());
+		return FALSE;
+	}
+
 	HGLOBAL hGlobal = LoadResource(NULL, hRsrc);
+	if (!hGlobal)
+	{
+		printf("LoadResource Error:%d", GetLastError());
+		return FALSE;
+	}
+
 	LPVOID lpVoid = LockResource(hGlobal);
+	if (!lpVoid)
+	{
+		printf("LockResource Error:%d", GetLastError());
+		return FALSE;
+	}
+
 	FILE* fp = NULL;
 	fopen_s(&fp, "GlobalHool.dll", "wb+");
 	fwrite(lpVoid, sizeof(char), dwSize, fp);
 	fclose(fp);
-	HookAndUnhook();
+
+	BOOL bRet = NULL;
+	bRet = GlobalHook(TRUE);
+	if (!bRet)
+	{
+		printf("SetGlobalHook Error:%d", GetLastError());
+		return FALSE;
+	}
+	system("pause");
+	bRet = GlobalHook(FALSE);
+	if (!bRet)
+	{
+		printf("UnSetGlobalHook Error:%d", GetLastError());
+		return FALSE;
+	}
 	return 0;
 
 }

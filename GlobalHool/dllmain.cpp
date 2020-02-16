@@ -38,5 +38,5 @@ EXTERN_C __declspec(dllexport) BOOL UnsetGlobalHook() {
     {
         UnhookWindowsHookEx(g_hHook);
     }
-    return true;
+    return TRUE;
 }
